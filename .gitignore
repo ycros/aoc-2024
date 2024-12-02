@@ -1,3 +1,6 @@
-*/*.exe
-*/ols.json
-*/input.txt
+ols.json
+input.txt
+sample.txt
+*.exe
+*.pdb
+tasks.json
