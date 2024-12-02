@@ -43,15 +43,19 @@ main :: proc() {
 	}
 	assert(len(left_numbers) == len(right_numbers))
 
-	slice.sort(left_numbers[:])
-	slice.sort(right_numbers[:])
+	part1(left_numbers[:], right_numbers[:])
+}
+
+part1 :: proc(left_numbers: []int, right_numbers: []int) {
+	slice.sort(left_numbers)
+	slice.sort(right_numbers)
 
 	total_distance := 0
-	for n in soa_zip(left = left_numbers[:], right = right_numbers[:]) {
+	for n in soa_zip(left = left_numbers, right = right_numbers) {
 		distance := abs(n.left - n.right)
-		fmt.eprintln("Left:", n.left, "Right:", n.right, "Dist:", distance)
+		// fmt.eprintln("Left:", n.left, "Right:", n.right, "Dist:", distance)
 		total_distance += distance
 	}
 
-	fmt.println("Total distance:", total_distance)
+	fmt.println("Part 1, total distance:", total_distance)
 }
