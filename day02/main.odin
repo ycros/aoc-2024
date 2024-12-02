@@ -68,6 +68,16 @@ main :: proc() {
 	}
 	assert(len(reports) > 0)
 
+	part1(reports)
+}
+
+LevelDirection :: enum {
+	Undecided,
+	Increasing,
+	Decreasing,
+}
+
+part1 :: proc(reports: [dynamic][]int) {
 	safe_count := 0
 	for report in reports {
 		first := true
@@ -115,11 +125,5 @@ main :: proc() {
 		if safe do safe_count += 1
 	}
 
-	fmt.println("Safe count:", safe_count)
-}
-
-LevelDirection :: enum {
-	Undecided,
-	Increasing,
-	Decreasing,
+	fmt.println("part1, safe count:", safe_count)
 }
