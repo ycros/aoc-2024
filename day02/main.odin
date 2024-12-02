@@ -9,6 +9,80 @@ import "core:slice"
 import "core:strconv"
 import "core:strings"
 
+part1 :: proc(reports: [dynamic][]int) {
+	safe_count := 0
+	for report in reports {
+		if safe, _ := test_report(report); safe {
+			safe_count += 1
+		}
+	}
+
+	fmt.println("part1, safe count:", safe_count)
+}
+
+part2 :: proc(reports: [dynamic][]int) {
+	total_safe_reports := 0
+	for report in reports {
+		safe: bool
+		unsafe_index: int
+		safe, unsafe_index = test_report(report)
+
+		for !safe && unsafe_index >= 0 {
+			safe, _ = test_report(report, unsafe_index)
+			unsafe_index -= 1
+		}
+
+		if safe do total_safe_reports += 1
+	}
+
+	fmt.println("part2, safe count:", total_safe_reports)
+}
+
+LevelDirection :: enum {
+	Undecided,
+	Increasing,
+	Decreasing,
+}
+
+test_report :: proc(report: []int, skip: int = -1) -> (safe: bool, bad_index: int) {
+	// fmt.println(report)
+	first := true
+	previous_level := 0
+	direction := LevelDirection.Undecided
+	for level, i in report {
+		if i == skip {
+			continue
+		}
+		if first {
+			first = false
+			previous_level = level
+			continue
+		}
+		delta := level - previous_level
+
+		if delta == 0 {
+			// fmt.println("UNSAFE:", direction, previous_level, level, delta)
+			return false, i
+		}
+
+		if direction == .Undecided {
+			direction = .Increasing if delta > 0 else .Decreasing
+		}
+
+		switch {
+		case direction == .Increasing && (delta < 1 || delta > 3):
+			fallthrough
+		case direction == .Decreasing && (delta > -1 || delta < -3):
+			// fmt.println("UNSAFE:", direction, previous_level, level, delta)
+			return false, i
+		}
+
+		previous_level = level
+	}
+
+	return true, -1
+}
+
 main :: proc() {
 	using bufio
 
@@ -70,127 +144,4 @@ main :: proc() {
 
 	part1(reports)
 	part2(reports)
-}
-
-LevelDirection :: enum {
-	Undecided,
-	Increasing,
-	Decreasing,
-}
-
-part1 :: proc(reports: [dynamic][]int) {
-	safe_count := 0
-	for report in reports {
-		first := true
-		safe := true
-		previous_level := 0
-		direction := LevelDirection.Undecided
-		loop: for level in report {
-			if first {
-				first = false
-				previous_level = level
-				continue
-			}
-			delta := level - previous_level
-
-			if delta == 0 {
-				safe = false
-				// fmt.println("UNSAFE:", direction, previous_level, level, delta)
-				break
-			}
-
-			if direction == .Undecided {
-				if delta > 0 {
-					direction = .Increasing
-				} else if delta < 0 {
-					direction = .Decreasing
-				} else {
-					panic("Shouldn't have gotten here.")
-				}
-			}
-
-			switch {
-			case direction == .Increasing && (delta < 1 || delta > 3):
-				fallthrough
-			case direction == .Decreasing && (delta > -1 || delta < -3):
-				// fmt.println("UNSAFE:", direction, previous_level, level, delta)
-				safe = false
-				break loop
-			}
-
-			previous_level = level
-		}
-
-		// fmt.println(report, safe)
-
-		if safe do safe_count += 1
-	}
-
-	fmt.println("part1, safe count:", safe_count)
-}
-
-part2 :: proc(reports: [dynamic][]int) {
-	test_report :: proc(report: []int, skip: int) -> (safe: bool, bad_index: int) {
-		// fmt.println(report)
-		first := true
-		previous_level := 0
-		direction := LevelDirection.Undecided
-		loop: for level, i in report {
-			if i == skip {
-				continue
-			}
-			if first {
-				first = false
-				previous_level = level
-				continue
-			}
-			delta := level - previous_level
-
-			if delta == 0 {
-				// fmt.println("UNSAFE:", direction, previous_level, level, delta)
-				return false, i
-			}
-
-			if direction == .Undecided {
-				if delta > 0 {
-					direction = .Increasing
-				} else if delta < 0 {
-					direction = .Decreasing
-				} else {
-					panic("Shouldn't have gotten here.")
-				}
-			}
-
-			switch {
-			case direction == .Increasing && (delta < 1 || delta > 3):
-				fallthrough
-			case direction == .Decreasing && (delta > -1 || delta < -3):
-				// fmt.println("UNSAFE:", direction, previous_level, level, delta)
-				return false, i
-			}
-
-			previous_level = level
-		}
-
-		return true, -1
-	}
-
-	total_safe_reports := 0
-	for report in reports {
-		safe: bool
-		unsafe_index: int
-		safe, unsafe_index = test_report(report, -1)
-
-		for !safe && unsafe_index >= 0 {
-			safe, _ = test_report(report, unsafe_index)
-			unsafe_index -= 1
-		}
-
-		// fmt.println("SAFE:", safe)
-		// fmt.println()
-
-		if safe do total_safe_reports += 1
-	}
-
-	fmt.println("part2, safe count:", total_safe_reports)
 }
