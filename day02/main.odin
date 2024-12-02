@@ -69,6 +69,7 @@ main :: proc() {
 	assert(len(reports) > 0)
 
 	part1(reports)
+	part2(reports)
 }
 
 LevelDirection :: enum {
@@ -94,7 +95,7 @@ part1 :: proc(reports: [dynamic][]int) {
 
 			if delta == 0 {
 				safe = false
-				fmt.println("UNSAFE:", direction, previous_level, level, delta)
+				// fmt.println("UNSAFE:", direction, previous_level, level, delta)
 				break
 			}
 
@@ -112,7 +113,7 @@ part1 :: proc(reports: [dynamic][]int) {
 			case direction == .Increasing && (delta < 1 || delta > 3):
 				fallthrough
 			case direction == .Decreasing && (delta > -1 || delta < -3):
-				fmt.println("UNSAFE:", direction, previous_level, level, delta)
+				// fmt.println("UNSAFE:", direction, previous_level, level, delta)
 				safe = false
 				break loop
 			}
@@ -120,10 +121,76 @@ part1 :: proc(reports: [dynamic][]int) {
 			previous_level = level
 		}
 
-		fmt.println(report, safe)
+		// fmt.println(report, safe)
 
 		if safe do safe_count += 1
 	}
 
 	fmt.println("part1, safe count:", safe_count)
+}
+
+part2 :: proc(reports: [dynamic][]int) {
+	test_report :: proc(report: []int, skip: int) -> (safe: bool, bad_index: int) {
+		// fmt.println(report)
+		first := true
+		previous_level := 0
+		direction := LevelDirection.Undecided
+		loop: for level, i in report {
+			if i == skip {
+				continue
+			}
+			if first {
+				first = false
+				previous_level = level
+				continue
+			}
+			delta := level - previous_level
+
+			if delta == 0 {
+				// fmt.println("UNSAFE:", direction, previous_level, level, delta)
+				return false, i
+			}
+
+			if direction == .Undecided {
+				if delta > 0 {
+					direction = .Increasing
+				} else if delta < 0 {
+					direction = .Decreasing
+				} else {
+					panic("Shouldn't have gotten here.")
+				}
+			}
+
+			switch {
+			case direction == .Increasing && (delta < 1 || delta > 3):
+				fallthrough
+			case direction == .Decreasing && (delta > -1 || delta < -3):
+				// fmt.println("UNSAFE:", direction, previous_level, level, delta)
+				return false, i
+			}
+
+			previous_level = level
+		}
+
+		return true, -1
+	}
+
+	total_safe_reports := 0
+	for report in reports {
+		safe: bool
+		unsafe_index: int
+		safe, unsafe_index = test_report(report, -1)
+
+		for !safe && unsafe_index >= 0 {
+			safe, _ = test_report(report, unsafe_index)
+			unsafe_index -= 1
+		}
+
+		// fmt.println("SAFE:", safe)
+		// fmt.println()
+
+		if safe do total_safe_reports += 1
+	}
+
+	fmt.println("part2, safe count:", total_safe_reports)
 }
