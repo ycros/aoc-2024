@@ -44,6 +44,7 @@ main :: proc() {
 	assert(len(left_numbers) == len(right_numbers))
 
 	part1(left_numbers[:], right_numbers[:])
+	part2(left_numbers[:], right_numbers[:])
 }
 
 part1 :: proc(left_numbers: []int, right_numbers: []int) {
@@ -58,4 +59,24 @@ part1 :: proc(left_numbers: []int, right_numbers: []int) {
 	}
 
 	fmt.println("Part 1, total distance:", total_distance)
+}
+
+part2 :: proc(left_numbers: []int, right_numbers: []int) {
+	// Assume they've been sorted by part1
+	assert(slice.is_sorted(left_numbers))
+	assert(slice.is_sorted(right_numbers))
+
+	similarity_score := 0
+	for left in left_numbers {
+		similarity_count := 0
+		for right in right_numbers {
+			if left == right {
+				similarity_count += 1
+			} else if similarity_count > 0 {
+				break
+			}
+		}
+		similarity_score += similarity_count * left
+	}
+	fmt.println("Part 2, total similarity score:", similarity_score)
 }
