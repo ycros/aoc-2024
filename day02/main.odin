@@ -3,6 +3,7 @@ package main
 import "core:bufio"
 import "core:bytes"
 import "core:fmt"
+import "core:io"
 import "core:mem"
 import "core:os"
 import "core:slice"
@@ -45,7 +46,6 @@ LevelDirection :: enum {
 }
 
 test_report :: proc(report: []int, skip: int = -1) -> (safe: bool, bad_index: int) {
-	// fmt.println(report)
 	first := true
 	previous_level := 0
 	direction := LevelDirection.Undecided
@@ -61,7 +61,6 @@ test_report :: proc(report: []int, skip: int = -1) -> (safe: bool, bad_index: in
 		delta := level - previous_level
 
 		if delta == 0 {
-			// fmt.println("UNSAFE:", direction, previous_level, level, delta)
 			return false, i
 		}
 
@@ -73,7 +72,6 @@ test_report :: proc(report: []int, skip: int = -1) -> (safe: bool, bad_index: in
 		case direction == .Increasing && (delta < 1 || delta > 3):
 			fallthrough
 		case direction == .Decreasing && (delta > -1 || delta < -3):
-			// fmt.println("UNSAFE:", direction, previous_level, level, delta)
 			return false, i
 		}
 
@@ -83,9 +81,33 @@ test_report :: proc(report: []int, skip: int = -1) -> (safe: bool, bad_index: in
 	return true, -1
 }
 
-main :: proc() {
+parse_reports :: proc(stream: io.Stream) -> [dynamic][]int {
 	using bufio
 
+	line_scanner: Scanner
+	scanner_init(&line_scanner, stream)
+	defer scanner_destroy(&line_scanner)
+
+	reports: [dynamic][]int
+
+	for scanner_scan(&line_scanner) {
+		line := scanner_text(&line_scanner)
+		splits := strings.split(line, " ")
+		defer delete(splits)
+		assert(len(splits) > 0)
+
+		report := make([]int, len(splits))
+		for s, i in splits {
+			report[i] = strconv.atoi(s)
+		}
+		append(&reports, report)
+	}
+	assert(len(reports) > 0)
+
+	return reports
+}
+
+main :: proc() {
 	when ODIN_DEBUG {
 		track: mem.Tracking_Allocator
 		mem.tracking_allocator_init(&track, context.allocator)
@@ -115,32 +137,13 @@ main :: proc() {
 	}
 
 	file_stream := os.stream_from_handle(fd)
-
-	line_scanner: Scanner
-	scanner_init(&line_scanner, file_stream)
-	defer scanner_destroy(&line_scanner)
-
-	reports: [dynamic][]int
+	reports := parse_reports(file_stream)
 	defer {
 		for r in reports {
 			delete(r)
 		}
 		delete(reports)
 	}
-
-	for scanner_scan(&line_scanner) {
-		line := scanner_text(&line_scanner)
-		splits := strings.split(line, " ")
-		defer delete(splits)
-		assert(len(splits) > 0)
-
-		report := make([]int, len(splits))
-		for s, i in splits {
-			report[i] = strconv.atoi(s)
-		}
-		append(&reports, report)
-	}
-	assert(len(reports) > 0)
 
 	part1(reports)
 	part2(reports)
