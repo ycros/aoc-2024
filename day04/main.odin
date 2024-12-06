@@ -100,10 +100,6 @@ parse_to_grid :: proc(text: string) -> Grid {
 	return grid
 }
 
-destroy_grid :: proc(grid: Grid) {
-	delete(grid.tiles)
-}
-
 print_grid :: proc(grid: Grid) {
 	first := true
 	for tile, i in grid.tiles {
