@@ -13,74 +13,14 @@ Equation :: struct {
 	operands:        [dynamic]int,
 }
 
-part1 :: proc(equations: [dynamic]Equation) {
-	Operator :: enum {
-		Add,
-		Mul,
-	}
-
-	totals := 0
-	for equation in equations {
-		operands := equation.operands
-		expected_result := equation.expected_result
-		// fmt.print(operands)
-		// fmt.println(" =", expected_result)
-
-		operators := make([]Operator, len(operands) - 1)
-		defer delete(operators)
-		for i := 0; i < len(operators); i += 1 {
-			operators[i] = Operator.Add
-		}
-
-		found := false
-		outer: for {
-			acc := operands[0]
-			for i := 1; i < len(operands); i += 1 {
-				switch operators[i - 1] {
-				case Operator.Add:
-					acc += operands[i]
-				case Operator.Mul:
-					acc *= operands[i]
-				}
-			}
-			if acc == expected_result {
-				found = true
-				break
-			}
-
-			// next_operator := Operator.Mul
-			for i := 0; i < len(operators); i += 1 {
-				if operators[i] == Operator.Mul {
-					operators[i] = Operator.Add
-					if i == len(operators) - 1 {
-						break outer
-					}
-					continue
-				}
-				operators[i] += Operator(1)
-				break
-			}
-		}
-
-		// fmt.println("Found:", found)
-		if found {
-			// fmt.println(operators)
-			totals += expected_result
-		}
-	}
-
-	fmt.println("part1:", totals)
-	assert(totals == 2501605301465)
+Operator :: enum {
+	Add,
+	Mul,
+	Concat,
 }
 
-
-part2 :: proc(equations: [dynamic]Equation) {
+solve :: proc(equations: [dynamic]Equation, max_operator: Operator) -> int {
 	defer free_all(context.temp_allocator)
-	Operator :: enum {
-		Add,
-		Mul,
-		Concat,
-	}
 
 	concat_acc: strings.Builder
 	strings.builder_init_none(&concat_acc, context.temp_allocator)
@@ -89,8 +29,6 @@ part2 :: proc(equations: [dynamic]Equation) {
 	for equation in equations {
 		operands := equation.operands
 		expected_result := equation.expected_result
-		// fmt.print(operands)
-		// fmt.println(" =", expected_result)
 
 		operators := make([]Operator, len(operands) - 1)
 		defer delete(operators)
@@ -100,10 +38,6 @@ part2 :: proc(equations: [dynamic]Equation) {
 
 		found := false
 		outer: for {
-			// debug prints
-			// fmt.println("operands:", operands)
-			// fmt.println("operators:", operators)
-
 			acc := operands[0]
 			for i := 1; i < len(operands); i += 1 {
 				switch operators[i - 1] {
@@ -123,9 +57,8 @@ part2 :: proc(equations: [dynamic]Equation) {
 				break
 			}
 
-			// next_operator := Operator.Mul
 			for i := 0; i < len(operators); i += 1 {
-				if operators[i] == Operator.Concat {
+				if operators[i] == max_operator {
 					operators[i] = Operator.Add
 					if i == len(operators) - 1 {
 						break outer
@@ -137,14 +70,21 @@ part2 :: proc(equations: [dynamic]Equation) {
 			}
 		}
 
-		// fmt.println("Found:", found)
 		if found {
-			// fmt.println(operators)
 			totals += expected_result
 		}
-		// fmt.println("\n")
 	}
 
+	return totals
+}
+
+part1 :: proc(equations: [dynamic]Equation) {
+	totals := solve(equations, Operator.Mul)
+	fmt.println("part1:", totals)
+}
+
+part2 :: proc(equations: [dynamic]Equation) {
+	totals := solve(equations, Operator.Concat)
 	fmt.println("part2:", totals)
 }
 
@@ -156,6 +96,12 @@ main :: proc() {
 	totals := 0
 
 	equations := make([dynamic]Equation)
+	defer {
+		for equation in equations {
+			delete(equation.operands)
+		}
+		delete(equations)
+	}
 	text := string(data)
 	for line in strings.split_lines_iterator(&text) {
 		line := line
