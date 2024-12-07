@@ -23,8 +23,10 @@ State :: struct {
 
 parse :: proc(text: string) -> (state: State) {
 	rule_re, err := re.create(`(\d+)\|(\d+)`)
+	defer re.destroy(rule_re)
 	capture := re.preallocate_capture()
 	assert(err == nil)
+	defer re.destroy(capture)
 
 	text := text
 	in_rules := true
@@ -81,6 +83,8 @@ reorder_and_return_middle :: proc(update: [dynamic]int, rules: [dynamic]OrderRul
 	}
 
 	sorted, cycled := sort(&sorter)
+	defer delete(sorted)
+	defer delete(cycled)
 
 	assert(len(cycled) == 0, "cycle detected")
 
@@ -154,14 +158,43 @@ part2 :: proc(state: State) {
 }
 
 main :: proc() {
+	when ODIN_DEBUG {
+		track: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&track, context.allocator)
+		context.allocator = mem.tracking_allocator(&track)
+
+		defer {
+			if len(track.allocation_map) > 0 {
+				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+				for _, entry in track.allocation_map {
+					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+				}
+			}
+			if len(track.bad_free_array) > 0 {
+				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
+				for entry in track.bad_free_array {
+					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
+				}
+			}
+			mem.tracking_allocator_destroy(&track)
+		}
+	}
+
 	data, ok := os.read_entire_file_from_filename("input.txt")
 	assert(ok)
 	defer delete(data)
 
 	text := string(data)
-	lines := strings.split_lines(text)
 
 	state := parse(text)
+	defer {
+		delete(state.order_rules)
+		for update in state.updates {
+			delete(update)
+		}
+		delete(state.updates)
+		delete(state.invalid_updates)
+	}
 
 	part1(&state)
 	part2(state)
