@@ -1,6 +1,6 @@
 ols.json
 input.txt
-sample.txt
+sample*.txt
 *.exe
 *.pdb
 tasks.json

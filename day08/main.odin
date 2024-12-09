@@ -13,7 +13,7 @@ Tile :: struct {
 	antinode: bool,
 }
 Grid :: struct {
-	tiles:         #soa[dynamic]Tile,
+	tiles:         [dynamic]Tile,
 	width:         int,
 	height:        int,
 	antenna_types: map[rune]bool,
@@ -45,34 +45,14 @@ print_grid :: proc(grid: Grid) {
 	}
 }
 
-main :: proc() {
-	data, ok := os.read_entire_file_from_filename("input.txt")
-	assert(ok)
-	defer delete(data)
+clone_grid :: proc(src: Grid) -> Grid {
+	dst := src
+	dst.tiles = make([dynamic]Tile, len(src.tiles))
+	copy(dst.tiles[:], src.tiles[:])
+	return dst
+}
 
-	text := string(data)
-	grid: Grid
-	for line in strings.split_lines_iterator(&text) {
-		if grid.width == 0 {
-			grid.width = len(line)
-		} else {
-			assert(grid.width == len(line))
-		}
-		grid.height += 1
-
-		line := line
-		for c in line {
-			if c == '.' {
-				append(&grid.tiles, Tile{nil, false})
-			} else {
-				grid.antenna_types[c] = true
-				append(&grid.tiles, Tile{c, false})
-			}
-		}
-	}
-
-	// print_grid(grid)
-
+part1 :: proc(grid: Grid) {
 	for i := 0; i < len(grid.tiles); i += 1 {
 		tile := grid.tiles[i]
 		if tile.antenna == nil {
@@ -112,4 +92,80 @@ main :: proc() {
 	}
 
 	fmt.println("part1:", antinodes)
+}
+
+mark_antinodes :: proc(grid: Grid, start_pos: Vec2, delta: Vec2) {
+	start_pos := start_pos
+	for {
+		next_pos := start_pos + delta
+		if next_pos.x < 0 ||
+		   next_pos.y < 0 ||
+		   next_pos.x >= grid.width ||
+		   next_pos.y >= grid.height {
+			break
+		}
+		grid.tiles[get_tile_index(grid, next_pos)].antinode = true
+		start_pos = next_pos
+	}
+}
+
+part2 :: proc(grid: Grid) {
+	for i := 0; i < len(grid.tiles); i += 1 {
+		tile := grid.tiles[i]
+		if tile.antenna == nil {
+			continue
+		}
+		pos := Vec2{i % grid.width, i / grid.width}
+		for j := i + 1; j < len(grid.tiles); j += 1 {
+			other_tile := grid.tiles[j]
+			if other_tile.antenna == tile.antenna {
+				other_pos := Vec2{j % grid.width, j / grid.width}
+				mark_antinodes(grid, pos, pos - other_pos)
+				mark_antinodes(grid, pos, other_pos - pos)
+				mark_antinodes(grid, other_pos, pos - other_pos)
+				mark_antinodes(grid, other_pos, other_pos - pos)
+			}
+		}
+	}
+
+	print_grid(grid)
+
+	antinodes := 0
+	for i := 0; i < len(grid.tiles); i += 1 {
+		if grid.tiles[i].antinode {
+			antinodes += 1
+		}
+	}
+
+	fmt.println("part2:", antinodes)
+}
+
+main :: proc() {
+	data, ok := os.read_entire_file_from_filename("input.txt")
+	assert(ok)
+	defer delete(data)
+
+	text := string(data)
+	grid: Grid
+	for line in strings.split_lines_iterator(&text) {
+		if grid.width == 0 {
+			grid.width = len(line)
+		} else {
+			assert(grid.width == len(line))
+		}
+		grid.height += 1
+
+		line := line
+		for c in line {
+			if c == '.' {
+				append(&grid.tiles, Tile{nil, false})
+			} else {
+				grid.antenna_types[c] = true
+				append(&grid.tiles, Tile{c, false})
+			}
+		}
+	}
+
+	part1(clone_grid(grid))
+	part2(clone_grid(grid))
 }
