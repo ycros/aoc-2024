@@ -118,7 +118,7 @@ part2 :: proc(disk: []int) {
 		space_not_found := space_len == 0 || space_start > file_start
 		file_fits := file_len <= space_len
 		if space_not_found || file_fits {
-			if !space_not_found && file_fits {
+			if !space_not_found {
 				copy(disk[space_start:], disk[file_start:file_start + file_len])
 				slice.fill(disk[file_start:file_start + file_len], FREE_SPACE)
 			}
