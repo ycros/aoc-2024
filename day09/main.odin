@@ -115,7 +115,13 @@ part2 :: proc(disk: []int) {
 	file_start, file_len, file_id := reverse_find_next_file(disk, len(disk) - 1)
 	for {
 		space_start, space_len := find_next_free_space(disk, space_search_pos)
-		if space_len == 0 || space_start > file_start {
+		space_not_found := space_len == 0 || space_start > file_start
+		file_fits := file_len <= space_len
+		if space_not_found || file_fits {
+			if !space_not_found && file_fits {
+				copy(disk[space_start:], disk[file_start:file_start + file_len])
+				slice.fill(disk[file_start:file_start + file_len], FREE_SPACE)
+			}
 			file_start, file_len, file_id = reverse_find_next_file(disk, file_start - 1, file_id)
 			space_search_pos = 0
 			if file_id == -1 {
@@ -124,17 +130,7 @@ part2 :: proc(disk: []int) {
 			continue
 		}
 
-		if file_len <= space_len {
-			copy(disk[space_start:], disk[file_start:file_start + file_len])
-			slice.fill(disk[file_start:file_start + file_len], FREE_SPACE)
-			file_start, file_len, file_id = reverse_find_next_file(disk, file_start - 1, file_id)
-			space_search_pos = 0
-			if file_id == -1 {
-				break
-			}
-		} else {
-			space_search_pos = space_start + space_len
-		}
+		space_search_pos = space_start + space_len
 	}
 
 	fmt.println("part2:", checksum(disk))
