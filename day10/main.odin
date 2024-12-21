@@ -91,33 +91,33 @@ populate_grid :: proc(file: string) -> Grid {
 	return grid
 }
 
-walk :: proc(grid: Grid, start: Vec2, seen: ^map[Vec2]struct {}, score: ^int) {
-	seen[start] = {}
-	start_value := grid.data[vec_to_index(grid, start)]
-	for vec, direction in Direction_Vecs {
-		next_pos := start + vec
-		if next_pos.x < 0 ||
-		   next_pos.x >= grid.width ||
-		   next_pos.y < 0 ||
-		   next_pos.y >= grid.height {
-			continue
-		}
-		if next_pos in seen {
-			continue
-		}
-		next_value := grid.data[vec_to_index(grid, next_pos)]
-		if next_value == start_value + 1 {
-			if next_value == 9 {
-				score^ += 1
-				seen[next_pos] = {}
+part1 :: proc(grid: Grid) {
+	walk :: proc(grid: Grid, start: Vec2, seen: ^map[Vec2]struct {}, score: ^int) {
+		seen[start] = {}
+		start_value := grid.data[vec_to_index(grid, start)]
+		for vec, direction in Direction_Vecs {
+			next_pos := start + vec
+			if next_pos.x < 0 ||
+			   next_pos.x >= grid.width ||
+			   next_pos.y < 0 ||
+			   next_pos.y >= grid.height {
 				continue
 			}
-			walk(grid, next_pos, seen, score)
+			if next_pos in seen {
+				continue
+			}
+			next_value := grid.data[vec_to_index(grid, next_pos)]
+			if next_value == start_value + 1 {
+				if next_value == 9 {
+					score^ += 1
+					seen[next_pos] = {}
+					continue
+				}
+				walk(grid, next_pos, seen, score)
+			}
 		}
 	}
-}
 
-part1 :: proc(grid: Grid) {
 	zeroes := make([dynamic]Vec2, 0, len(grid.data))
 	for b, i in grid.data {
 		if b == 0 {
@@ -129,100 +129,6 @@ part1 :: proc(grid: Grid) {
 	for zero in zeroes {
 		seen := make(map[Vec2]struct {})
 		walk(grid, zero, &seen, &score)
-	}
-
-	fmt.println("part1:", score)
-}
-
-part1_first :: proc(grid: Grid) {
-	zeroes := make([dynamic]int, 0, len(grid.data))
-	for b, i in grid.data {
-		if b == 0 {
-			append(&zeroes, i)
-		}
-	}
-
-	score := 0
-	for zero in zeroes {
-		head := index_to_vec(grid, zero)
-		head_value := grid.data[zero]
-		head_direction_vecs_index := 0
-
-		trail := make([dynamic]Vec2, 0, len(grid.data))
-		fully_seen := make(map[Vec2]struct {})
-		append(&trail, head)
-
-		for {
-			fmt.println("pos", head, "trail", len(trail))
-			// fmt.println(
-			// 	"DEBUG: head:",
-			// 	head,
-			// 	"head_value:",
-			// 	head_value,
-			// 	"head_direction_vecs_index:",
-			// 	head_direction_vecs_index,
-			// )
-
-			moved := false
-			for i := head_direction_vecs_index; i < len(Direction_Vecs); i += 1 {
-				dir := Direction(i)
-				vec := Direction_Vecs[dir]
-				next_pos := head + vec
-
-				// fmt.println("DEBUG: checking", dir)
-
-				if next_pos.x < 0 ||
-				   next_pos.x >= grid.width ||
-				   next_pos.y < 0 ||
-				   next_pos.y >= grid.height {
-					continue
-				}
-
-				next_value := grid.data[vec_to_index(grid, next_pos)]
-
-				// fmt.println("DEBUG:", "next_pos: ", next_pos, "next_value: ", next_value)
-
-				if next_value == 9 {
-					// fmt.println("DEBUG: found a nine")
-					score += 1
-				} else if next_value == head_value + 1 && !(next_pos in fully_seen) {
-					// fmt.println("DEBUG: moving to next value")
-					head = next_pos
-					head_value = next_value
-					head_direction_vecs_index = 0
-					append(&trail, head)
-					moved = true
-					break
-				}
-			}
-
-			if !moved {
-				// fmt.println("DEBUG: no more moves")
-				old_head := pop(&trail)
-				fully_seen[old_head] = {}
-
-				if len(trail) == 0 {
-					break
-				}
-
-				head = trail[len(trail) - 1]
-				head_value = grid.data[vec_to_index(grid, head)]
-				head_direction_vecs_index = 0
-				for i := 0; i < len(Direction_Vecs); i += 1 {
-					dir := Direction(i)
-					vec := Direction_Vecs[dir]
-					if head - vec == old_head {
-						head_direction_vecs_index = i
-						// fmt.println("DEBUG:", "old_head:", old_head, "head", head, "vec", vec)
-						break
-					}
-				}
-				continue
-			}
-
-			// fmt.println("DEBUG: keep moving")
-		}
-		break //temp
 	}
 
 	fmt.println("part1:", score)
