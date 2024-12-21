@@ -91,6 +91,54 @@ populate_grid :: proc(file: string) -> Grid {
 	return grid
 }
 
+part2 :: proc(grid: Grid) {
+	walk :: proc(grid: Grid, start: Vec2, seen: ^map[Vec2]struct {}) -> int {
+		seen[start] = {}
+		start_value := grid.data[vec_to_index(grid, start)]
+		paths := 0
+
+		for vec, direction in Direction_Vecs {
+			next_pos := start + vec
+			if next_pos.x < 0 ||
+			   next_pos.x >= grid.width ||
+			   next_pos.y < 0 ||
+			   next_pos.y >= grid.height {
+				continue
+			}
+			if next_pos in seen {
+				continue
+			}
+			next_value := grid.data[vec_to_index(grid, next_pos)]
+			if next_value == start_value + 1 {
+				if next_value == 9 {
+					paths += 1
+					continue
+				}
+				paths += walk(grid, next_pos, seen)
+			}
+		}
+
+		delete_key(seen, start)
+
+		return paths
+	}
+
+	zeroes := make([dynamic]Vec2, 0, len(grid.data))
+	for b, i in grid.data {
+		if b == 0 {
+			append(&zeroes, index_to_vec(grid, i))
+		}
+	}
+
+	score := 0
+	for zero in zeroes {
+		seen := make(map[Vec2]struct {}, len(grid.data))
+		score += walk(grid, zero, &seen)
+	}
+
+	fmt.println("part2:", score)
+}
+
 part1 :: proc(grid: Grid) {
 	walk :: proc(grid: Grid, start: Vec2, seen: ^map[Vec2]struct {}, score: ^int) {
 		seen[start] = {}
@@ -139,4 +187,5 @@ main :: proc() {
 
 	print_grid(grid)
 	part1(grid)
+	part2(grid)
 }
